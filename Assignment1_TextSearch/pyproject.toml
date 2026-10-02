@@ -1,0 +1,19 @@
+[project]
+name = "assignment1-textsearch"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "robint2", email = "theo.robin2@mail.dcu.ie" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "click>=8.5.0",
+]
+
+[project.scripts]
+assignment1-textsearch = "assignment1_textsearch:main"
+
+[build-system]
+requires = ["uv_build>=0.12.21,<0.13.0"]
+build-backend = "uv_build"
