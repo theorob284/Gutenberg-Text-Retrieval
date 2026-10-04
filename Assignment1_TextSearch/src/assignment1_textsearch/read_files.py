@@ -1,27 +1,23 @@
 import csv
 
-
 def read_books_txt(path):
-    test_counter = 0
-    for f in path.glob('*.txt'):
-        print(f.read_text(encoding='utf-8').strip())
+    for f in path.glob("*.txt"):
+        try:
+            text = f.read_text(encoding="utf-8").strip()
 
-        test_counter += 1
-        if test_counter >= 5:
-            print(f"{test_counter} files were read")
-            break
+            yield {
+                "filename": f.name,
+                "text": text
+            }
+
+        except UnicodeDecodeError as e:
+            print(f"Could not decode: {f.name}")
+            print(e)
+
 
 def read_books_csv(path):
     with open(path, encoding="utf-8") as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=",")
-        line_count = 0
+        csv_reader = csv.DictReader(csv_file)
 
         for row in csv_reader:
-            if line_count == 0:
-                print(f'Column names are {", ".join(row)}')
-            else:
-                print(row)
-
-            line_count += 1
-
-        print(f"Processed {line_count} lines.")
+            yield row

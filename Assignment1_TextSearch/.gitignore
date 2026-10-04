@@ -12,3 +12,5 @@ wheels/
 # Text folder of books (too large)
 books/
 *.txt
+
+*.jsonl

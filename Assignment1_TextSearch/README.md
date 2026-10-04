@@ -1,0 +1,1 @@
+uv run python -m assignment1_textsearch.main --load_csv
