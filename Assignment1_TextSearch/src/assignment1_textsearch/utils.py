@@ -9,6 +9,7 @@ from nltk.stem import PorterStemmer
 
 from whoosh.fields import Schema, TEXT, ID, KEYWORD
 from whoosh.index import create_in
+from whoosh.qparser import QueryParser
 
 STOPWORDS = {
     "en": set(stopwords.words("english")),
@@ -83,7 +84,6 @@ def get_text_and_index():
 
     writer.commit()
     #print(processed[:300])
-
 
 def remove_gutenberg_boilerplate(text):
     start_match = re.search(r"\*\*\*\s*START OF THE PROJECT GUTENBERG (?:EBOOK|ETEXT).*?\*\*\*", text, flags=re.IGNORECASE)
