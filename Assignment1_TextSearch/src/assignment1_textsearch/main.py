@@ -4,7 +4,7 @@ import gzip
 from pathlib import Path
 
 from .read_files import read_books_csv, read_books_txt
-from .utils import get_text_and_index, remove_gutenberg_boilerplate
+from .utils import remove_gutenberg_boilerplate, get_text_and_index, search_index
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -16,7 +16,8 @@ BOOKS_DIR = PROJECT_ROOT / "books"
 @click.option("--load_txt", is_flag=True, help="Test loads the text files of each book")
 @click.option("--match_csv_book", is_flag=True, help="Matches csv row to its book and converts to jsonl")
 @click.option("--index_text", is_flag=True, help="preprocesses text")
-def main(load_csv, load_txt, match_csv_book, index_text):
+@click.option("--view_index", is_flag=True, help="view indexing of whoosh")
+def main(load_csv, load_txt, match_csv_book, index_text, view_index):
 
     if load_txt:
         read_books_txt(BOOKS_DIR)
@@ -52,6 +53,9 @@ def main(load_csv, load_txt, match_csv_book, index_text):
 
     if index_text:
         get_text_and_index()
+
+    if view_index:
+        search_index()
         
 
 if __name__ == "__main__":
