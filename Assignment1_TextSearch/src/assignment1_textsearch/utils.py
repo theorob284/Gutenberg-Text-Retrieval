@@ -1,11 +1,14 @@
 import json
 import re
 import contractions
+from pathlib import Path
 
 from nltk.tokenize import word_tokenize
 from nltk.corpus import stopwords
 from nltk.stem import PorterStemmer
 
+from whoosh.fields import Schema, TEXT, ID, KEYWORD
+from whoosh.index import create_in
 
 STOPWORDS = {
     "en": set(stopwords.words("english")),
@@ -15,7 +18,6 @@ STOPWORDS = {
 }
 
 stemmer = PorterStemmer()
-
 
 def preprocess_text(text, language):
     text = text.lower()
@@ -36,11 +38,7 @@ def preprocess_text(text, language):
 
     stop_words = STOPWORDS.get(language, set())
 
-    tokens = [
-        word
-        for word in tokens
-        if word not in stop_words
-    ]
+    tokens = [word for word in tokens if word not in stop_words]
 
     # only stem English for now
     if language == "en":
@@ -48,32 +46,60 @@ def preprocess_text(text, language):
 
     return tokens
 
+SCHEMA = Schema(
+    gutenberg_id=ID(stored=True, unique=True),
+    title=TEXT(stored=True),
+    author=TEXT(stored=True),
+    language=KEYWORD(stored=True),
+    text=TEXT(stored=False)
+)
 
-def get_text():
+def get_text_and_index():
     with open("books.jsonl", encoding="utf-8") as f:
         line = next(f)
 
     book = json.loads(line)
 
-    text = book["text"]
     language = book["language"]
+    text = book["text"]
 
-    processed = preprocess_text(text, language)
+    processed_tokens = preprocess_text(text, language)
+    processed_text = " ".join(processed_tokens)
 
-    print(processed[:100])
+    #index text using whoosh
+    INDEX_DIR = Path("indexed_text")
+    INDEX_DIR.mkdir(exist_ok=True) # make dir for indexing to be placed in
 
-import re
+    ix = create_in(INDEX_DIR, SCHEMA)
+    writer = ix.writer()
+
+    writer.add_document(
+        gutenberg_id=book["gutenberg_id"],
+        title=book["title"],
+        author=book["author"],
+        language=language,
+        text=processed_text
+    )
+
+    writer.commit()
+    #print(processed[:300])
 
 
 def remove_gutenberg_boilerplate(text):
-    start_match = re.search(r"\*\*\*\s*START OF THE PROJECT GUTENBERG EBOOK.*?\*\*\*", text, flags=re.IGNORECASE)
+    start_match = re.search(r"\*\*\*\s*START OF THE PROJECT GUTENBERG (?:EBOOK|ETEXT).*?\*\*\*", text, flags=re.IGNORECASE)
 
-    end_match = re.search(r"\*\*\*\s*END OF THE PROJECT GUTENBERG EBOOK.*?\*\*\*", text, flags=re.IGNORECASE)
+    end_match = re.search(r"\*\*\*\s*END OF THE PROJECT GUTENBERG (?:EBOOK|ETEXT).*?\*\*\*",text,flags=re.IGNORECASE)
 
     if start_match:
         text = text[start_match.end():]
 
     if end_match:
         text = text[:end_match.start()]
+
+    # Handle older Gutenberg material that may still appear
+    old_markers = list(re.finditer(r"\*{2,}\s*The Project Gutenberg Etext of .*?\*{2,}", text, flags=re.IGNORECASE))
+
+    if old_markers:
+        text = text[old_markers[-1].end():]
 
     return text.strip()
