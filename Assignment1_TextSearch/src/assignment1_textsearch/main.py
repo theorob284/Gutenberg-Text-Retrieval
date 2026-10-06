@@ -4,7 +4,11 @@ import gzip
 from pathlib import Path
 
 from .read_files import read_books_csv, read_books_txt
-from .utils import remove_gutenberg_boilerplate, get_text_and_index, search_index
+from .utils import remove_gutenberg_boilerplate
+from .index_text import get_text_and_index
+from .search_index import search_books
+from .tests import get_and_count_languages ,count_gutenberg_appearences, test_search_index
+from .generate_results import generate_results
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
@@ -15,9 +19,14 @@ BOOKS_DIR = PROJECT_ROOT / "books"
 @click.option("--load_csv", is_flag=True, help="Test loads all the rows of the CSV file")
 @click.option("--load_txt", is_flag=True, help="Test loads the text files of each book")
 @click.option("--match_csv_book", is_flag=True, help="Matches csv row to its book and converts to jsonl")
-@click.option("--index_text", is_flag=True, help="preprocesses text")
-@click.option("--view_index", is_flag=True, help="view indexing of whoosh")
-def main(load_csv, load_txt, match_csv_book, index_text, view_index):
+@click.option("--index_text", is_flag=True, help="Preprocesses and indexes book text")
+@click.option("--search", type=str,help="Search the Whoosh index - MAIN IDEA")
+@click.option("--generate_submission", is_flag=True, help="Generates submission text file in the correct format")
+# Test options
+@click.option("--count_languages", is_flag=True, help="Returns a dict and count of the languages present")
+@click.option("--count_gutenberg", is_flag=True, help="Returns a number of times gutenberg appears post pre-processing")
+@click.option("--test_view_index", is_flag=True, help="View hard coded tests of different fields in the index")
+def main(load_csv, load_txt ,match_csv_book, index_text, search, generate_submission ,count_languages, count_gutenberg, test_view_index):
 
     if load_txt:
         read_books_txt(BOOKS_DIR)
@@ -54,8 +63,21 @@ def main(load_csv, load_txt, match_csv_book, index_text, view_index):
     if index_text:
         get_text_and_index()
 
-    if view_index:
-        search_index()
+    if search: # main function, outputs to .txt files
+        search_books(search)
+
+    if generate_submission:
+        generate_results()
+
+    if count_languages:
+        get_and_count_languages()
+
+    if count_gutenberg:
+        count_gutenberg_appearences()
+
+    if test_view_index:
+        test_search_index()
+
         
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.11"
 
 [[package]]
@@ -21,6 +21,7 @@ dependencies = [
     { name = "contractions" },
     { name = "nltk" },
     { name = "pyspellchecker" },
+    { name = "tqdm" },
     { name = "whoosh" },
 ]
 
@@ -31,6 +32,7 @@ requires-dist = [
     { name = "contractions", specifier = ">=0.1.73" },
     { name = "nltk", specifier = ">=3.10.3" },
     { name = "pyspellchecker", specifier = ">=0.9.0" },
+    { name = "tqdm", specifier = ">=4.70.1" },
     { name = "whoosh", specifier = ">=2.7.4" },
 ]
 
