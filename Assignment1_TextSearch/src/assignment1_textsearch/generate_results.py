@@ -17,7 +17,6 @@ def generate_results():
         lines = search_books(
             query_text,
             submission=True,
-            language="en",
             query_id=query_id
         )
 
