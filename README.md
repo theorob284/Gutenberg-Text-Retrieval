@@ -1,93 +1,162 @@
-# Text_Search_Assignment1
+# Search Technologies – Project Gutenberg Search Engine
 
+An information retrieval project that builds a searchable index over a collection of 10,000 Project Gutenberg books.
 
+The project processes raw book text and metadata, removes Project Gutenberg boilerplate, performs language-aware text preprocessing, builds a Whoosh search index, and supports ranked searches across book content, titles and authors.
 
-## Getting started
+It also supports exact phrase searching, multilingual stemming and stop-word removal, index statistics, and generation of ranked search results in a standard submission format.
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## Project Overview
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+The dataset consists of approximately 10,000 books from Project Gutenberg.
 
-## Add your files
+Each book contains metadata including:
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- Gutenberg ID
+- Filename
+- Title
+- Author
+- Language
+- Full book text
 
+The project combines the metadata and corresponding text files into a single JSONL dataset before preprocessing and indexing the collection.
+
+The main goal is to retrieve the most relevant books for a user query using a ranked information retrieval system.
+
+## Pipeline
+
+```text
+Book metadata CSV + raw book files
+                ↓
+Match metadata to book text
+                ↓
+Remove Project Gutenberg boilerplate
+                ↓
+Create JSONL dataset
+                ↓
+Normalise and preprocess text
+                ↓
+Language-specific stemming + stop-word removal
+                ↓
+Build Whoosh index
+                ↓
+Search title, author and book content
+                ↓
+Rank results
+                ↓
+Output search results / submission results
 ```
-cd existing_repo
-git remote add origin https://gitlab.computing.dcu.ie/robint2/text_search_assignment1.git
-git branch -M main
-git push -uf origin main
-```
 
-## Integrate with your tools
+## Data Preparation
+### Match Metadata and Book Text
+Book metadata is loaded from the CSV dataset and matched with the corresponding Project Gutenberg text file.
 
-* [Set up project integrations](https://gitlab.computing.dcu.ie/robint2/text_search_assignment1/-/settings/integrations)
+The resulting records are written to books.jsonl and contain:
+- Gutenberg ID
+- Filename
+- Title
+- Author
+- Language
+- Full text
+The loader also handles gzip-compressed books where required.
 
-## Collaborate with your team
+### Remove Project Gutenberg Boilerplate
+Project Gutenberg books include standard headers and footers surrounding the actual book content.
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+The preprocessing pipeline detects both newer and older Gutenberg markers and removes this boilerplate before indexing.
 
-## Test and Deploy
+This reduces irrelevant repeated text in the searchable corpus.
 
-Use the built-in continuous integration in GitLab.
+### Text Normalisation
+Text is normalised before indexing by:
+- converting text to lowercase
+- removing URLs
+- removing punctuation
+- normalising whitespace
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+Metadata such as titles and authors is normalised separately.
 
-***
+### Multilingual Preprocessing
+The project contains language-specific preprocessing for multiple European languages:
+- English
+- French
+- German
+- Finnish
+- Dutch
+- Italian
+- Spanish
+- Portuguese
+- Swedish
+- Danish
+NLTK stop-word lists are used to remove common words for each supported language.
 
-# Editing this README
+Snowball stemmers are then used to reduce words to their root forms.
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+For languages without a configured stemmer or stop-word list, the original tokens are retained.
 
-## Suggestions for a good README
+Stemmed words are cached to reduce repeated processing during indexing.
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+## Search Index
+The search engine uses Whoosh to construct the index.
 
-## Name
-Choose a self-explaining name for your project.
+The schema contains the following fields:
+- gutenberg_id
+- title
+- author
+- language
+- text
+- text_phrase
+Two versions of the book text are indexed.
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+### Processed Text
+The text field contains language-specific processed text with stop-word removal and stemming.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+This is useful for general information retrieval where related forms of a word should be treated similarly.
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+### Phrase Text
+The text_phrase field contains normalised text without stemming.
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+This preserves the original word sequence and allows exact phrases to be searched more effectively.
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+### Ranked Search
+Queries can search several parts of each book simultaneously.
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+The search system combines:
+- Normal body-text search
+- Title search
+- Author search
+- Exact phrase search
+The results from these searches are combined into a single ranked query.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Different fields are weighted to reflect their relevance:
+Search Type	Boost
+Body text	1.0
+Exact phrase	1.5
+Title	2.5
+Author	3.0
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+This means that, for example, a query matching a book's author receives a stronger relevance signal than the same term appearing somewhere in the body of the book.
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+The final results are ranked using Whoosh's relevance scoring.
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+### Phrase Search
+Exact phrase searching is supported using the unstemmed text_phrase index.
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+For example:
+"he has plundered our seas"
 
-## License
-For open source projects, say how it is licensed.
+can be searched as a phrase rather than as a collection of independent terms.
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+This is particularly useful when searching for quotations or distinctive passages.
+
+### Search Output
+Normal searches return up to 20 ranked results.
+
+Each result includes:
+- Rank
+- Gutenberg ID
+- Title
+- Author
+- Relevance score
+The results are saved as text files inside:
+results/
